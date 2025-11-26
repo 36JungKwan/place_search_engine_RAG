@@ -88,13 +88,9 @@ Request Payload
 **Content-Type: application/json**
 ```json
 {
-
 "query": "Tao đang chán đời quá, tìm chỗ nào nhậu ở Quận 1 đi",
-
 "session_id": "session_123456",
-
 "is_new_topic": false
-
 }
 ```
 - query: Câu hỏi tự nhiên của người dùng.

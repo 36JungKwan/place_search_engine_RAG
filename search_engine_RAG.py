@@ -130,8 +130,8 @@ class RAGService:
                             "properties": {
                                 "search_text": {"type": "string"},
                                 "district": {"type": "string", "description": "Tên Quận/Huyện đã chuẩn hóa. QUY TẮC: 1. Viết tắt: 'Q1' -> 'Quận 1', 'Q.3' -> 'Quận 3'. 2. Tên chữ: 'Tân Bình', 'Thủ Đức' -> Giữ nguyên. 3. ĐẶC BIỆT: Nếu user nói 'Sài Gòn', 'TPHCM', 'Thành phố' hoặc không nói rõ quận -> Trả về NULL (để tìm toàn thành phố)."},
-                                "min_price": {"type": "integer", "description": "Giá thấp nhất (VND). Nếu user nhập '50k', hãy convert thành 50000."},
-                                "max_price": {"type": "integer", "description": "Giá cao nhất (VND). Lưu ý: 'k' = 000. VD: '40k' -> 40000."},
+                                "min_price": {"type": "integer", "description": "Giá thấp nhất (VND). Nếu user nhập '50k', hãy convert thành 50000. Nếu user KHÔNG nói ngân sách cụ thể thì đừng quan tâm đến giá ."},
+                                "max_price": {"type": "integer", "description": "Giá cao nhất (VND). Lưu ý: 'k' = 000. VD: '40k' -> 40000. QUAN TRỌNG: Nếu user KHÔNG nói ngân sách cụ thể thì đừng quan tâm đến giá."},
                                 "is_open_now": {"type": "boolean"},
                                 "search_strategy": {"type": "string", "enum": ["precise", "semantic"]},
                                 "exclude_keywords": {"type": "array", "items": {"type": "string"},"description": """
@@ -143,10 +143,31 @@ class RAGService:
                                 "exclude_districts": {"type": "array","items": {"type": "string"},"description": "Danh sách quận user KHÔNG MUỐN đến. VD: User nói 'trừ Q1, Q3' -> ['Quận 1', 'Quận 3']."},
                                 "target_categories": {"type": "array","items": {"type": "string"},"description": """
                                 Danh sách các loại hình quán user ĐANG TÌM.
-                                QUAN TRỌNG: Hãy tư duy mở rộng (Brainstorm) thêm nhiều loại liên quan ngoài các ví dụ đã gợi ý.
-                                VD: User tìm 'quán nước' -> ['Cà phê', 'Trà sữa', 'Sinh tố', 'Giải khát'].
-                                VD: User tìm 'ăn no' -> ['Nhà hàng', 'Quán ăn', 'Cơm', 'Phở', 'Bún'].
-                                """}
+                                QUAN TRỌNG: 
+                                1. Nếu user tìm 'cafe', 'nước', 'trà sữa' -> CHỈ lấy ['Cà phê', 'Trà sữa', 'Giải khát']. TUYỆT ĐỐI KHÔNG thêm 'Quán ăn', 'Nhà hàng'.
+                                2. Nếu user tìm 'ăn', 'cơm', 'phở' -> Lấy ['Nhà hàng', 'Quán ăn', 'Món Việt', ...].
+                                3. Nếu user tìm 'nhậu' -> Lấy ['Quán nhậu', 'Beer', 'Bar'].
+                                4. Nếu user tìm MÓN CỤ THỂ (VD: 'BBQ', 'Lẩu', 'Sushi', 'Pizza', 'Chay') -> CHỈ lấy category đó. TUYỆT ĐỐI KHÔNG thêm 'Nhà hàng' hay 'Quán ăn'.
+                                (VD: Tìm 'BBQ' -> ['Nướng', 'Buffet', 'Grill']. KHÔNG lấy 'Nhà hàng').
+                                Hãy chọn category sát nhất với từ khóa của user.
+                                5. Nếu user tìm ĐẶC ĐIỂM RIÊNG (VD: 'Rooftop', 'View đẹp', 'Sân vườn', 'Cá Koi', 'Mèo') -> CHỈ lấy category chứa đặc điểm đó (VD: ['Rooftop', 'Sân vườn', 'View']). 
+                                -> TUYỆT ĐỐI KHÔNG thêm 'Cafe' hay 'Nhà hàng' chung chung vào list này.
+                                6. Nếu user tìm 'Bar', 'Pub', 'Club', 'Quẩy' -> 
+                                - Lấy ['Bar', 'Pub', 'Club', 'Nightlife', 'Lounge'].
+                                - QUAN TRỌNG: TUYỆT ĐỐI KHÔNG lấy 'Nhà hàng', 'Steakhouse', 'Grill', 'Kitchen', 'Bistro'. 
+                                (Vì 'Grill & Bar' thường là chỗ ăn, không phải chỗ quẩy).
+                                7. LOGIC ĐẶC BIỆT KHI USER TIÊU CỰC (Chửi thề, buồn, chán):
+                                - Nếu user đang bực bội/chửi (mood='negative'), hãy TỰ ĐỘNG gợi ý các món 'Giải sầu' phù hợp:
+                                    + ['Quán nhậu', 'Bia', 'Bar'] (để xả stress).
+                                    + ['Đồ ngọt', 'Trà sữa', 'Bánh'] (để user thấy ngọt ngào hơn).
+                                    + ['Lẩu', 'Nướng'] (ăn cho đã cơn thèm).
+                                - Đừng trả về danh sách trống khi user chửi bậy. Hãy lấp đầy bằng các món trên.                      
+                                """},
+                                "mood": {
+                                    "type": "string",
+                                    "enum": ["neutral", "negative"],
+                                    "description": "Nếu user chửi thề, dùng từ ngữ tiêu cực, than vãn, buồn bã -> Đặt là 'negative'. Còn lại là 'neutral'."
+                                }               
                             },
                             "required": ["search_text", "search_strategy"]
                         }
@@ -279,7 +300,7 @@ class RAGService:
             or_conditions = []
             for i, cat in enumerate(params["target_categories"]):
                 arg_name = f"inc_cat_{i}"
-                or_conditions.append(f"category ILIKE :{arg_name}")
+                or_conditions.append(f"(category ILIKE :{arg_name} OR name ILIKE :{arg_name})")
                 sql_params[arg_name] = f"%{cat}%"
         
         # Gộp lại bằng OR và đóng ngoặc
@@ -333,8 +354,10 @@ class RAGService:
         
         return [], ""
 
-    def generate_response_and_data(self, user_input, results, system_note):
+    def generate_response_and_data(self, user_input, results, system_note, user_mood="neutral"):
         if not results:
+            if user_mood == "negative":
+                return "Nghe vẻ bạn đang có chuyện không vui, nhưng tiếc là mình chưa tìm được quán nào phù hợp để giải sầu lúc này. Thử lại khu vực khác xem sao nhé! 🍺", []
             return "Xin lỗi, không tìm thấy quán nào phù hợp. 😅", []
 
         restaurants_data = []
@@ -348,9 +371,21 @@ class RAGService:
             restaurants_data.append(item)
             context_str += f"- {item['name']} ({item['address']}) | Giá: {item['priceRange']} | Giờ: {item['hours']} | Loại: {item['category']}\n"
 
+
+        tone_instruction = "Trả lời ngắn gọn, thân thiện, lịch sự."
+        if user_mood == "negative":
+            tone_instruction = """
+            USER ĐANG CÓ TÂM TRẠNG XẤU (Bực bội, buồn, hoặc vừa chửi thề).
+            NHIỆM VỤ CỦA BẠN:
+            1. Không giáo điều, không chỉnh đốn ngôn từ của khách.
+            2. Hãy tỏ ra đồng cảm, 'chill' và tâm lý (kiểu như một người bạn thân rủ đi nhậu giải sầu).
+            3. Dùng các câu dẫn như: 'Hạ hỏa nào bạn ơi', 'Đời đắng thì mình tìm gì ngọt ngào ăn nhé', 'Làm ly bia cho quên sự đời'.
+            4. Giới thiệu các quán bên dưới như là liều thuốc tinh thần.
+            """
         prompt = f"""
         QUERY: "{user_input}"
         NOTE: "{system_note}"
+        TONE: {tone_instruction}
         DATA:
         {context_str}
         
@@ -379,9 +414,12 @@ async def search_endpoint(payload: SearchPayload):
     # Pipeline
     params = rag.parse_intent(payload.query)
     logger.info(f"[INTENT] {params}") # Log Intent đã parse được
-    
+
+    # Lấy mood ra (mặc định là neutral nếu không có)
+    current_mood = params.get("mood", "neutral")
+
     results, note = rag.search_pipeline(params)
-    answer, json_data = rag.generate_response_and_data(payload.query, results, note)
+    answer, json_data = rag.generate_response_and_data(payload.query, results, note, user_mood=current_mood)
 
     # Save History
     session_mgr.append({"role": "user", "content": [{"text": payload.query}]})
@@ -398,4 +436,7 @@ async def search_endpoint(payload: SearchPayload):
     }
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=7000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=7000, reload=False)
+
+
+### Thêm decription cho chửi bậy 

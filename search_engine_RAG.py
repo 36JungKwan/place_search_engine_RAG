@@ -398,6 +398,7 @@ class RAGService:
             return resp['output']['message']['content'][0]['text'], restaurants_data
         except Exception:
             return "Dưới đây là danh sách quán.", restaurants_data
+        """
 
 # --- 5. API ENDPOINT ---
 @app.post("/api/search")
@@ -437,6 +438,3 @@ async def search_endpoint(payload: SearchPayload):
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=7000, reload=False)
-
-
-### Thêm decription cho chửi bậy 

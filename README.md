@@ -91,18 +91,18 @@ Request Payload
 
 "query": "Tao đang chán đời quá, tìm chỗ nào nhậu ở Quận 1 đi",
 
-"session\_id": "session\_123456",
+"session_id": "session_123456",
 
-"is\_new\_topic": false
+"is_new_topic": false
 
 }
 ```
 
 - query: Câu hỏi tự nhiên của người dùng.
 
-- session\_id: ID phiên làm việc (để duy trì ngữ cảnh chat).
+- session_id: ID phiên làm việc (để duy trì ngữ cảnh chat).
 
-- is\_new\_topic: true nếu muốn reset lịch sử chat.
+- is_new_topic: true nếu muốn reset lịch sử chat.
 
 Response Example
 
@@ -112,7 +112,7 @@ Response Example
 
 "answer": "Hạ hỏa nào bạn ơi, đời còn dài gái còn nhiều. Làm ly bia cho quên sự đời nhé! Dưới đây là mấy quán 'chất' ở Quận 1 cho bạn giải sầu:",
 
-"restaurants": \[
+"restaurants": [
 
 {
 
@@ -132,7 +132,7 @@ Response Example
 
 }
 
-\],
+],
 
 "debug\_intent": {
 
@@ -140,7 +140,7 @@ Response Example
 
 "mood": "negative",
 
-"target\_categories": \["Quán nhậu", "Beer", "Bar"\]
+"target_categories": ["Quán nhậu", "Beer", "Bar"]
 
 }
 
@@ -155,17 +155,17 @@ Response Example
 
 3. Search Engine thực hiện truy vấn DB:
 
-- Tạo Embedding từ query (Titan V2).
+   - Tạo Embedding từ query (Titan V2).
 
-- Thực thi SQL Query (Hybrid Search).
+   - Thực thi SQL Query (Hybrid Search).
 
-- Nếu ít kết quả → kích hoạt Fallback Mechanism.
+   - Nếu ít kết quả → kích hoạt Fallback Mechanism.
 
 4. Generation:
 
-- Tổng hợp kết quả tìm kiếm.
+   - Tổng hợp kết quả tìm kiếm.
 
-- Gửi Prompt + Context + Mood instruction sang Claude Sonnet.
+   - Gửi Prompt + Context + Mood instruction sang Claude Sonnet.
 
 5. Return:
 
@@ -175,8 +175,8 @@ Trả về câu trả lời dạng text và JSON danh sách quán.
 
 Hệ thống tích hợp logging chi tiết để theo dõi chi phí và hiệu năng:
 
-\[BEDROCK\]: Theo dõi Token Input/Output và thời gian phản hồi của model.
+[BEDROCK]: Theo dõi Token Input/Output và thời gian phản hồi của model.
 
-\[SQL\]: Theo dõi thời gian truy vấn DB và điểm số (Score) của kết quả.
+[SQL]: Theo dõi thời gian truy vấn DB và điểm số (Score) của kết quả.
 
-\[INTENT\]: Log lại các filter mà AI đã trích xuất được.
+[INTENT]: Log lại các filter mà AI đã trích xuất được.
